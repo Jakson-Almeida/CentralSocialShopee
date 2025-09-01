@@ -77,3 +77,4 @@ SHOW TABLES;
 DESCRIBE `users`;
 DESCRIBE `posts`;
 DESCRIBE `settings`;
+

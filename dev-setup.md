@@ -105,3 +105,4 @@ Para problemas técnicos:
 ---
 
 **🎉 Pronto! Sua plataforma está funcionando!**
+

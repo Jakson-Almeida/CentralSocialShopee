@@ -20,3 +20,4 @@ RewriteRule ^(.*)$ index.php [QSA,L]
     Order allow,deny
     Deny from all
 </Files>
+
