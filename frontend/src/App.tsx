@@ -9,34 +9,63 @@ interface User {
   id: string;
   name: string;
   email: string;
-  picture: string;
+  picture?: string;
   isAuthenticated: boolean;
 }
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost/api';
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há usuário logado no localStorage
+    // Verificar se há usuário salvo no localStorage
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const authToken = localStorage.getItem('authToken');
+    
+    if (savedUser && authToken) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
+      }
     }
-    setIsLoading(false);
+    
+    setLoading(false);
   }, []);
 
   const handleLogin = (userData: User) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    try {
+      // Chamar endpoint de logout no backend
+      const authToken = localStorage.getItem('authToken');
+      if (authToken) {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Limpar dados locais
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      setUser(null);
+    }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="loading">
         <div className="spinner"></div>
@@ -50,30 +79,34 @@ function App() {
       <div className="App">
         {user && <Header user={user} onLogout={handleLogout} />}
         
-        <main className="main-content">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                user ? (
-                  <Dashboard />
-                ) : (
-                  <Navigate to="/auth" replace />
-                )
-              } 
-            />
-            <Route 
-              path="/auth" 
-              element={
-                user ? (
-                  <Navigate to="/" replace />
-                ) : (
-                  <GoogleAuth onLogin={handleLogin} />
-                )
-              } 
-            />
-          </Routes>
-        </main>
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              user ? (
+                <Dashboard />
+              ) : (
+                <GoogleAuth onLogin={handleLogin} />
+              )
+            } 
+          />
+          
+          <Route 
+            path="/dashboard" 
+            element={
+              user ? <Dashboard /> : <Navigate to="/" replace />
+            } 
+          />
+          
+          <Route 
+            path="/auth/callback" 
+            element={
+              user ? <Navigate to="/dashboard" replace /> : <GoogleAuth onLogin={handleLogin} />
+            } 
+          />
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     </Router>
   );
